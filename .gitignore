@@ -1,0 +1,12 @@
+data
+figures
+tables
+*~
+!tomtom/data
+*.json
+*.csv
+!tomtom/output/*.csv
+!output/stan_outputs/*.csv
+!output/*.csv
+*.rds
+!rep.rds

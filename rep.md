@@ -1,0 +1,597 @@
+
+
+First we load the processed data.
+
+
+```r
+df <- read_rds("rep.rds")
+```
+
+Then we perform all of the analyses in the paper using TomTom data.
+
+
+```r
+# Plot residential demographics vs. speeding.
+df %>%
+  select(city, tt_absolute) %>%
+  unnest(cols = tt_absolute) %>%
+  group_by(city, beat) %>%
+  # Average across years for residential demographics.
+  summarize(
+    pct_nw = mean(pct_nw),
+    sp_over_15 = mean(raw_sp_over_15),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = pct_nw, y = sp_over_15)) + 
+  geom_point(alpha = .25, size = 1/2) + 
+  geom_smooth(method = lm, color = "red", formula = y ~ x) +
+  scale_y_continuous(
+    "Time spent speeding (>15 KPH)",
+    labels = label_percent()
+  ) +
+  scale_x_continuous(
+    "Non-white residents in beat",
+    labels = label_percent(),
+    limits = c(0, 1)
+  )	+
+  theme(
+    legend.position = "none",
+    axis.title = element_text(size = 8),
+    axis.text = element_text(color = "black"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+  )
+```
+
+![plot of chunk tomtom_driving_and_exposure](figure/tomtom_driving_and_exposure-1.png)
+
+```r
+ggsave(
+  path(ROOT, "figure", "tt_speeding_vs_residential_demographics.pdf"),
+  width = 7,
+  height = 7,
+  units = "cm"
+)
+
+df %>%
+  select(city, tt_absolute) %>%
+  unnest(cols = tt_absolute) %>%
+  group_by(city, beat) %>%
+  # Average across years for residential demographics.
+  summarize(
+    pct_nw = mean(pct_nw),
+    sp_over_15 = mean(sp_over_15),
+    .groups = "drop"
+  ) %>%
+  glue_data(
+    "Correlation between percent of residents who are non-white and percent ",
+    "of drivers stopped for speeding who are non-white: ",
+    "{ cor(pct_nw, sp_over_15, use = 'complete.obs') }.\n\n",
+  ) %>%
+  cat()
+```
+
+```
+## Correlation between percent of residents who are non-white and percent of drivers stopped for speeding who are non-white: 0.0495804825206311.
+```
+
+```r
+# Plot main regression and unadjusted regression.
+tt_main_regression <- df %>%
+  select(city, tt_absolute) %>%
+  unnest(cols = tt_absolute) %>%
+  glm.nb(
+    n_stops_sp ~ offset(log(exposure)) + 0 + sp_over_15 + city:pct_nw + city
+                  + city:year,
+    data = .
+  )
+
+tt_main_beta_bar <- sim(tt_main_regression, 1000) %>%
+  coef() %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(beta_bar = mean(c_across(ends_with(":pct_nw")))) %>%
+  ungroup() %>%
+  summarize(
+    estimate = mean(beta_bar),
+    std.dev = sd(beta_bar),
+    regression = "Adjusted for speeding",
+    .groups = "drop"
+  )
+
+tt_main_regression_df <- tt_main_regression %>%
+  broom::tidy() %>%
+  mutate(regression = "Adjusted for speeding")
+
+tt_unadjusted_regression <- df %>%
+  select(city, tt_absolute) %>%
+  unnest(cols = tt_absolute) %>%
+  glm.nb(
+    n_stops_sp ~ offset(log(exposure)) + 0 + city:pct_nw + city + city:year,
+    data = .
+  )
+
+tt_unadjusted_beta_bar <- sim(tt_unadjusted_regression, 1000) %>%
+  coef() %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(beta_bar = mean(c_across(ends_with(":pct_nw")))) %>%
+  ungroup() %>%
+  summarize(
+    estimate = mean(beta_bar),
+    std.dev = sd(beta_bar),
+    regression = "Unadjusted for speeding",
+    .groups = "drop"
+  )
+
+tt_unadjusted_regression_df <- tt_unadjusted_regression %>%
+  broom::tidy() %>%
+  mutate(regression = "Unadjusted for speeding")
+
+tt_beta_bar <- bind_rows(tt_main_beta_bar, tt_unadjusted_beta_bar)
+
+bind_rows(tt_main_regression_df, tt_unadjusted_regression_df) %>%
+  filter(str_detect(term, ":pct_nw$")) %>%
+  mutate(
+    city = str_remove_all(term, "^city|:pct_nw$"),
+    city = factor(
+      city,
+      city_order,
+      str_to_title(str_replace(city_order, "_", " "))
+    )
+  ) %>%
+  select(city, estimate, std.error, regression) %>%
+  ggplot(aes(x = city)) +
+  geom_pointrange(
+    aes(
+      y = estimate,
+      ymin = estimate - 1 * std.error,
+      ymax = estimate + 1 * std.error
+    ),
+    linetype = 'solid',
+    fatten = 1,
+    size = 1
+  ) +  
+  geom_hline(aes(yintercept = 0)) + 
+  geom_segment(
+    aes(xend = city, y = estimate - 2 * std.error, yend = estimate - std.error),
+    size = 1/12
+  ) +
+  geom_segment(
+    aes(xend = city, y = estimate + 2 * std.error, yend = estimate + std.error),
+    size = 1/12
+  ) +  
+  facet_wrap(vars(regression)) + 
+  scale_y_continuous(
+    expression(paste("Disparate impact (", hat(beta)[Race], ")")),
+    breaks = seq(-2, 4)
+  ) + 
+  scale_x_discrete(NULL) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = tt_beta_bar,
+    linetype = "dashed",
+    color = "#21618C"
+  ) +   
+  geom_rect(
+    aes(
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = estimate - std.dev,
+      ymax = estimate + std.dev
+    ), 
+    data = tt_beta_bar,
+    inherit.aes = FALSE,
+    fill = '#3498DB',
+    alpha = .5,
+    linetype = 0
+  ) +   
+ geom_rect(
+    aes(
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = estimate - 2 * std.dev,
+      ymax = estimate + 2 * std.dev
+    ), 
+    data = tt_beta_bar,
+    inherit.aes = FALSE,
+    fill = '#AED6F1',
+    alpha = .5,
+    linetype = 0
+  ) +       
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(color = "black",  size = 6),
+    strip.text.x = element_text(size = 6),
+    axis.title = element_text(size = 8),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) + 
+  coord_flip()
+```
+
+![plot of chunk tomtom_driving_and_exposure](figure/tomtom_driving_and_exposure-2.png)
+
+```r
+ggsave(
+  path(ROOT, "figure", "tt_regression_coefficients.pdf"),
+  width = linewidth,
+  height = (5/9) * linewidth
+)
+
+tt_all_stops_regression <- df %>%
+  select(city, tt_absolute) %>%
+  unnest(cols = tt_absolute) %>%
+  glm.nb(
+    n_stops ~ offset(log(exposure)) + 0 + city:pct_nw + city + city:year,
+    data = .
+  )
+
+tt_all_stops_beta_bar <- sim(tt_all_stops_regression, 1000) %>%
+  coef() %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(beta_bar = mean(c_across(ends_with(":pct_nw")))) %>%
+  ungroup() %>%
+  summarize(
+    estimate = mean(beta_bar),
+    std.dev = sd(beta_bar),
+    regression = "All stops",
+    .groups = "drop"
+  )
+
+tt_all_stops_regression_df <- tt_all_stops_regression %>%
+  broom::tidy() %>%
+  mutate(regression = "All stops")
+
+tt_all_stops_regression_df %>%
+  filter(str_detect(term, ":pct_nw$")) %>%
+  mutate(
+    city = str_remove_all(term, "^city|:pct_nw$"),
+    city = factor(
+      city,
+      city_order,
+      str_to_title(str_replace(city_order, "_", " "))
+    )
+  ) %>%
+  select(city, estimate, std.error, regression) %>%
+  ggplot(aes(x = city)) +
+  geom_pointrange(
+    aes(
+      y = estimate,
+      ymin = estimate - 1 * std.error,
+      ymax = estimate + 1 * std.error
+    ),
+    linetype = 'solid',
+    fatten = 1,
+    size = 1
+  ) +  
+  geom_hline(aes(yintercept = 0)) + 
+  geom_segment(
+    aes(xend = city, y = estimate - 2 * std.error, yend = estimate - std.error),
+    size = 1/12
+  ) +
+  geom_segment(
+    aes(xend = city, y = estimate + 2 * std.error, yend = estimate + std.error),
+    size = 1/12
+  ) +  
+  scale_y_continuous(
+    expression(paste("Disparate impact (", hat(beta)[Race], ")")),
+    breaks = seq(-2, 4)
+  ) + 
+  scale_x_discrete(NULL) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = tt_all_stops_beta_bar,
+    linetype = "dashed",
+    color = "#21618C"
+  ) +   
+  geom_rect(
+    aes(
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = estimate - std.dev,
+      ymax = estimate + std.dev
+    ), 
+    data = tt_all_stops_beta_bar,
+    inherit.aes = FALSE,
+    fill = '#3498DB',
+    alpha = .5,
+    linetype = 0
+  ) +   
+ geom_rect(
+    aes(
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = estimate - 2 * std.dev,
+      ymax = estimate + 2 * std.dev
+    ), 
+    data = tt_all_stops_beta_bar,
+    inherit.aes = FALSE,
+    fill = '#AED6F1',
+    alpha = .5,
+    linetype = 0
+  ) +       
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(color = "black",  size = 6),
+    strip.text.x = element_text(size = 6),
+    axis.title = element_text(size = 8),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  )  + 
+  coord_flip()
+```
+
+![plot of chunk tomtom_driving_and_exposure](figure/tomtom_driving_and_exposure-3.png)
+
+```r
+ggsave(
+  path(ROOT, "figure", "tt_regression_coefficients_all_stops.pdf"),
+  width = linewidth,
+  height = linewidth
+)
+
+# Refit the main model using quasipoisson regression
+tt_qp_regression <- df %>%
+  select(city, tt_absolute) %>%
+  unnest(cols = tt_absolute) %>%
+  glm(
+    n_stops_sp ~ offset(log(exposure)) + 0 + sp_over_15 + city:pct_nw + city
+                  + city:year,
+    data = .,
+    family = quasipoisson(),
+  )
+
+tt_qp_beta_bar <- sim(tt_qp_regression, 1000) %>%
+  coef() %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(beta_bar = mean(c_across(ends_with(":pct_nw")))) %>%
+  ungroup() %>%
+  summarize(
+    estimate = mean(beta_bar),
+    std.dev = sd(beta_bar),
+    regression = "Adjusted for speeding",
+    .groups = "drop"
+  )
+
+tt_qp_regression_df <- tt_qp_regression %>%
+  broom::tidy() 
+
+tt_qp_regression_df %>%
+  filter(str_detect(term, ":pct_nw$")) %>%
+  mutate(
+    city = str_remove_all(term, "^city|:pct_nw$"),
+    city = factor(
+      city,
+      city_order,
+      str_to_title(str_replace(city_order, "_", " "))
+    )
+  ) %>%
+  select(city, estimate, std.error) %>%
+  ggplot(aes(x = fct_rev(city))) +
+  geom_pointrange(
+    aes(
+      y = estimate,
+      ymin = estimate - 1 * std.error,
+      ymax = estimate + 1 * std.error
+    ),
+    linetype = 'solid',
+    fatten = 1,
+    size = 1
+  ) +  
+  geom_hline(aes(yintercept = 0)) + 
+  geom_segment(
+    aes(xend = city, y = estimate - 2 * std.error, yend = estimate - std.error),
+    size = 1/12
+  ) +
+  geom_segment(
+    aes(xend = city, y = estimate + 2 * std.error, yend = estimate + std.error),
+    size = 1/12
+  ) +  
+  scale_y_continuous(
+    expression(paste("Disparate impact (", hat(beta)[Race], ")")),
+    breaks = seq(-2, 4)
+  ) + 
+  scale_x_discrete(NULL) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = tt_qp_beta_bar,
+    linetype = "dashed",
+    color = "#21618C"
+  ) +   
+  geom_rect(
+    aes(
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = estimate - std.dev,
+      ymax = estimate + std.dev
+    ), 
+    data = tt_qp_beta_bar,
+    inherit.aes = FALSE,
+    fill = '#3498DB',
+    alpha = .5,
+    linetype = 0
+  ) +   
+ geom_rect(
+    aes(
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = estimate - 2 * std.dev,
+      ymax = estimate + 2 * std.dev
+    ), 
+    data = tt_qp_beta_bar,
+    inherit.aes = FALSE,
+    fill = '#AED6F1',
+    alpha = .5,
+    linetype = 0
+  ) +       
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(color = "black",  size = 6),
+    strip.text.x = element_text(size = 6),
+    axis.title = element_text(size = 8),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  )
+```
+
+![plot of chunk tomtom_driving_and_exposure](figure/tomtom_driving_and_exposure-4.png)
+
+```r
+ggsave(
+  path(ROOT, "figure", "tt_quasipoisson.pdf"),
+  width = textwidth,
+  height = (5/9) * textwidth
+)
+
+# Fit multiple models, one for each speed bucket.
+tt_absolute_df <-
+  df %>%
+  select(city, tt_absolute) %>%
+  unnest(cols = tt_absolute)
+
+tibble(
+    speed = 2:6 * 5,
+    formula_str = glue::glue(
+      "n_stops_sp ~ offset(log(exposure)) + 0 + sp_over_{ speed }",
+      "+ city:pct_nw + city + city:year",
+      .sep = " "
+    )
+  ) %>%
+  rowwise() %>%
+  mutate(formula = list(formula(formula_str))) %>%
+  mutate(model = list(glm.nb(formula, data = tt_absolute_df))) %>%
+  mutate(coef = list(broom::tidy(model))) %>%
+  mutate(pct_nw = list(filter(coef, str_detect(term, "pct_nw")))) %>%
+  ungroup() %>%
+  select(speed, pct_nw) %>%
+  unnest(cols = pct_nw) %>%
+  mutate(
+    city = str_extract(term, "(?<=city)(.+)(?=:)"),
+    city = str_replace(city, "_", " "),
+    city = str_to_title(city)
+  ) %>%
+  ggplot(aes(x = speed)) +
+  geom_line(aes(y = estimate)) +
+  geom_pointrange(
+    aes(
+      y = estimate,
+      ymin = estimate - 1 * std.error,
+      ymax = estimate + 1 * std.error
+    ),
+    linetype = 'solid',
+    fatten = 1,
+    size = 1
+  ) +  
+  geom_hline(aes(yintercept = 0)) + 
+  geom_segment(
+    aes(xend = speed, y = estimate - 2 * std.error, yend = estimate - std.error),
+    size = 1/12
+  ) +
+  geom_segment(
+    aes(xend = speed, y = estimate + 2 * std.error, yend = estimate + std.error),
+    size = 1/12
+  ) +  
+  scale_y_continuous(
+    expression(paste("Disparate impact (", hat(beta)[Race], ")")),
+    breaks = seq(-2, 4)
+  ) + 
+  scale_x_continuous("Speeding threshold above speed limit (KPH)") +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(color = "black",  size = 6),
+    strip.text.x = element_text(size = 6),
+    axis.title = element_text(size = 8),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) + 
+  facet_wrap(vars(city))
+```
+
+![plot of chunk tomtom_driving_and_exposure](figure/tomtom_driving_and_exposure-5.png)
+
+```r
+ggsave(
+  path(ROOT, "figure", "tt_speed_robustness_absolute.pdf"),
+  width = textwidth,
+  height = (5/9) * textwidth
+)
+
+tt_relative_df <-
+  df %>%
+  select(city, tt_relative) %>%
+  unnest(cols = tt_relative)
+
+tibble(
+    speed = 10 * 1:8,
+    formula_str = glue::glue(
+      "n_stops_sp ~ offset(log(exposure)) + 0 + sp_over_{ speed }_pct",
+      "+ city:pct_nw + city + city:year",
+      .sep = " "
+    )
+  ) %>%
+  rowwise() %>%
+  mutate(formula = list(formula(formula_str))) %>%
+  mutate(model = list(glm.nb(formula, data = tt_relative_df))) %>%
+  mutate(coef = list(broom::tidy(model))) %>%
+  mutate(pct_nw = list(filter(coef, str_detect(term, "pct_nw")))) %>%
+  ungroup() %>%
+  select(speed, pct_nw) %>%
+  unnest(cols = pct_nw) %>%
+  mutate(
+    city = str_extract(term, "(?<=city)(.+)(?=:)"),
+    city = str_replace(city, "_", " "),
+    city = str_to_title(city),
+    speed = speed / 100,
+  ) %>%
+  ggplot(aes(x = speed)) +
+  geom_line(aes(y = estimate)) +
+  geom_pointrange(
+    aes(
+      y = estimate,
+      ymin = estimate - 1 * std.error,
+      ymax = estimate + 1 * std.error
+    ),
+    linetype = 'solid',
+    fatten = 1,
+    size = 1
+  ) +  
+  geom_hline(aes(yintercept = 0)) + 
+  geom_segment(
+    aes(xend = speed, y = estimate - 2 * std.error, yend = estimate - std.error),
+    size = 1/12
+  ) +
+  geom_segment(
+    aes(xend = speed, y = estimate + 2 * std.error, yend = estimate + std.error),
+    size = 1/12
+  ) +  
+  scale_y_continuous(
+    expression(paste("Disparate impact (", hat(beta)[Race], ")")),
+    breaks = seq(-2, 4)
+  ) + 
+  scale_x_continuous(
+    "Speeding threshold above speed limit (percent of speed limit)",
+    labels = label_percent()
+  ) +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(color = "black",  size = 6),
+    strip.text.x = element_text(size = 6),
+    axis.title = element_text(size = 8),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) + 
+  facet_wrap(vars(city))
+```
+
+![plot of chunk tomtom_driving_and_exposure](figure/tomtom_driving_and_exposure-6.png)
+
+```r
+ggsave(
+  path(ROOT, "figure", "tt_speed_robustness_relative.pdf"),
+  width = textwidth,
+  height = (5/9) * textwidth
+)
+```

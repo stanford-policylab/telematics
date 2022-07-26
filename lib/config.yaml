@@ -1,0 +1,296 @@
+chicago:
+  state: IL
+  county: ["031"]
+  geoid_prefix: CHI
+  speeding:
+    - "MOVING VIOLATION: SPEED"
+    - SPEED
+    - MPH
+  highways:
+    - \bI ?190                                # Interstate 190
+    - \bI ?290                                # Interstate 290
+    - \bI ?294                                # Interstate 294
+    - \bI ?355                                # Interstate 355
+    - \bI ?55                                 # Interstate 55
+    - \bI ?57                                 # Interstate 57
+    - \bI ?80                                 # Interstate 80
+    - \bI ?88                                 # Interstate 88
+    - \bI ?90                                 # Interstate 90
+    - \bI ?94                                 # Interstate 94
+    - \bBISHOP ?FORD ?(EXPY|XPRS|EXPRESS)     # Bishop Ford Memorial Freeway
+    - \bCHICAGO ?SKYWAY                       # Chicago Skyway
+    - \bDAN ?RYAN ?(EXPY|XPRS|LOCAL|EXPRESS)  # Dan Ryan Expressway
+    - \bEDENS ?(EXPY|XPRS|EXPRESS|SPUR)       # Edens Expressway
+    - \bEISENHOWER ?(EXPY|XPRS|EXPRESS)       # Eisenhower Expressway
+    - \bKENNEDY ?(EXPY|XPRS|EXPRESS)          # Kennedy Expressway
+    - \bSTEVENSON ?(EXPY|XPRS|EXPRESS)        # Stevenson Expressway
+  bad_beats:
+    - "1651"  # O'Hare Airport
+    - "1652"  # O'Hare Airport
+    - "1653"  # O'Hare Airport
+    - "1654"  # O'Hare Airport
+    - "1655"  # O'Hare Airport
+    - "0813"  # Midway Airport
+    - "3100"  # Norridge, Harwood Heights, Mt. Olivet Cemetery [?]
+aurora:
+  state: CO
+  county: ["001", "005", "035"]
+  geoid_prefix: AUR
+  max_year: 2016
+  speeding:
+    - SPEED
+  highways:
+    - \bI( |-)?70  # Interstate 70
+    - \bI( |-)?225 # Interstae 225
+    - \bE( |-)?470 # Toll Road E-470
+  bad_beats:
+    - BAFB  # Bucky Airforce Base
+plano:
+  state: TX
+  county: ["085", "121"]
+  geoid_prefix: PLA
+  min_year: 2013 # NOTE: Location is only available in 2013 and 2014 for some
+  max_year: 2014 # reason. (The raw data were heterogeonous, accroding to OPP docs.)
+  speeding:
+    - SPEED
+    - MPH
+  highways:
+    - \b(US|HWY?|HIGHWAY)( |-)?121                              # US Highway 121
+    - \bSAM ?RAYBURN ?TOLL(WAY)?                                # Sam Rayburn Tollway (US Highway 121)
+    - \bDALLAS ?(NORTH )?TOLL(WAY)?                             # Dallas North Tollway
+    - \b(US|HWY?|HIGHWAY)( |-)?75                               # US Highway 75
+    - \bCENTRAL ?(EXPW?Y|EXPRESSWAY)|\b(NB|SB) ?CENTRAL         # Central Expressway (US Highway 75)
+    - \bGEORGE ?BUSH|\bBUSH ?(HWY?|HIGHWAY|TPKE|TURNPIKE|TOLL)  # President George Bush Turnpike
+oklahoma_city:
+  state: OK
+  county: ["109", "017", "027", "125"]
+  geoid_prefix: OKL
+  max_year: 2017
+  speeding:
+    - SPEED
+  highways:
+    - \bI( |-)?35                                     # Interstate 35
+    - \bI( |-)?235                                    # Interstate 235
+    - \bI( |-)?40                                     # Interstate 40
+    - \bI( |-)?240                                    # Interstate 240
+    - \bI( |-)?44                                     # Interstate 44
+    - \bLHP|\b(LA?KE?)? ?HEF(NER)? ?(PKW?Y?|PARKWAY)  # Lake Hefner Parkway (HWY 74)
+    - \b(BW|BWAY|BROADWAY)(?! ?AV)                    # Broadway Extension (HWY 77)
+    - \bAIRPORT                                       # Airport Road (HWY 152)
+    - \b(HW?Y|SW|SE|NW|S|N) +62|\b62 HW?Y             # Highway 62
+    - \b(HW?Y|SW|SE|NW|S|N) +3|\b3 HW?Y               # Highway 3
+  bad_beats:
+    - A6    # Industrial (non-residential) area near I 44 / I 40 interchange, airport, and Oklahoma landfill.
+    - C9    # Commercial area near I44 / HWY 77 interchange.
+    - B6    # Lake Hefner
+    - B8    # Lake Overholser
+    - F     # Will Rogers World Airport
+    - WA    # Wiley Post Airport
+    - BT    # Boathouse District
+    - TI    # Tinker Air Force Base
+    - D11   # Lake Stanley Draper
+    - SPK   # Sportsmans Club Lake
+    - STK   # Oklahoma National Stockyards
+    - UNK1  # Lake Hiwassee
+    - UNK3  # Unclaimed [?] enclave in Midwest City
+    - AR    # Arcadia (town)
+    - VB    # Valley Brook (town)
+    - LA    # Lake Aluma (town)
+    - FP    # Forest Park (town)
+    - LUT   # Luther (town)
+    - NP    # Nicoma Park (town)
+    - JON   # Jones (town)
+    - NH    # Nichols Hills (town)
+    - SP    # Spencer (city)
+    - PM    # Piedmont (city)
+    - VI    # The Village (city)
+    - CHO   # Choctaw (city)
+    - BE    # Bethany (city)
+    - BE2   # Southern Nazarene University (in Bethany)
+    - MU    # Mustang (city)
+    - DC    # Del City (city)
+    - YU    # Yukon (city)
+    - MW    # Midwest City
+    - MO    # Moore (city)
+    - ED    # Edmond (city)
+    - NM    # Norman (city)
+wichita:
+  state: KS
+  county: ["173"]
+  geoid_prefix: WIC
+  max_year: 2016
+  speeding:
+    - SPEED
+  highways:
+    - \b(I|HWY|HIGHWAY)( |-)?35|\b35( |-)?(HWY|HIGHWAY|RAMP?)   # Interstate 35
+    - \b(I|HWY|HIGHWAY)( |-)?135|\b135( |-)?(HWY|HIGHWAY|RAMP?) # Interstate 135
+    - \b(I|HWY|HIGHWAY)( |-)?235|\b135( |-)?(HWY|HIGHWAY|RAMP?) # Interstate 235
+    - \b(HWY|US)( |-)?254|\b254( |-)?(HWY|HIGHWAY|RAMP?)        # US Highway 254
+    - \b(HWY|US)( |-)?54|\b54( |-)?(HWY|HIGHWAY|RAMP?)          # US Highway 54
+    - \b(HWY|US)( |-)?400|\b400( |-)?(HWY|HIGHWAY|RAMP?)        # US Highway 400
+    - \bK( |-)?96|\b96 ?(HWY|HIGHWAY|RAMP?)                     # Kansas Highway 96
+    - \bK( |-)?42|\b42 ?(HWY|HIGHWAY|RAMP?)                     # Kansas Highway 42
+    - \bK( |-)?15|\b15 ?(HWY|HIGHWAY|RAMP?)                     # Kansas Highway 15
+    - \bKELLOGG ?AVE(NUE)?                                      # Kellog Ave (same as Route 400)
+  bad_beats:
+    - "0"   # No such beat. Appears to be an error.
+    - "17"  # Wichita Dwight D. Eisenhower National Airport
+    - "21"  # Downtown Wichita
+    - "22"  # Downtown Wichita
+madison:
+  state: WI
+  county: ["025"]
+  geoid_prefix: MAD
+  max_year: 2016
+  speeding:
+    - SPEED
+  highways:
+    - (HW?Y|USH?|HIGHWAY) ?151  # US Highway 151
+    - (HW?Y|USH?|HIGHWAY) ?30   # US Highway 30
+    - (HW?Y|USH?|HIGHWAY) ?18   # US Highway 18
+    - (HW?Y|USH?|HIGHWAY) ?14   # US Highway 14
+    - (HW?Y|USH?|HIGHWAY) ?12   # US Highway 12
+    - BELTLINE                  # Beltline Highway
+    - (I|ITERSTATE) ?90         # I-90
+    - (I|ITERSTATE) ?94         # I-90
+  bad_beats:
+    - "514" # Dane County Regional Airport
+    - "513" # Bridges Golf Course
+    - "307" # University of Wisconsin-Madison Arboretum
+tulsa:
+  state: OK
+  county: ["143", "113", "131", "145"]
+  geoid_prefix: TUL
+  max_year: 2016
+  speeding:
+    - SPEED
+  highways:
+    - \b(I|HI|HW|HY|HWY|HIWAY)( |-)?44      # Interstate 44
+    - \b44( |-)?(I|HI|HW|HY|HWY|HIWAY|EX)   # Interstate 44
+    - \b(I|HI|HW|HY|HWY|HIWAY)( |-)?244     # Interstate 244
+    - \b244( |-)?(I|HI|HW|HY|HWY|HIWAY|EX)  # Interstate 244
+    - \b(I|HI|HW|HY|HWY|HIWAY)( |-)?444     # Interstate 444
+    - \b444( |-)?(I|HI|HW|HY|HWY|HIWAY|EX)  # Interstate 444
+    - \b(US|HI|HW|HY|HWY|HIWAY)( |-)?64     # Highway 64
+    - \b64( |-)(US|HI|HW|HY|HWY|HIWAY|EX)   # Highway 64
+    - \b(US|HI|HW|HY|HWY|HIWAY)( |-)?75     # Highway 75
+    - \b75( |-)(US|HI|HW|HY|HWY|HIWAY|EX)   # Highway 75
+    - \b(US|HI|HW|HY|HWY|HIWAY)( |-)?51     # Highway 51
+    - \b51( |-)(US|HI|HW|HY|HWY|HIWAY|EX)   # Highway 51
+    - \b(US|HI|HW|HY|HWY|HIWAY)( |-)?169    # Highway 169
+    - \b169( |-)(US|HI|HW|HY|HWY|HIWAY|EX)  # Highway 169
+    - \b(US|HI|HW|HY|HWY|HIWAY)( |-)?11     # Highway 11
+    - \b11( |-)(US|HI|HW|HY|HWY|HIWAY|EX)   # Highway 11
+    - \bGILCREASE EX                        # Gilcrease Expressway
+    - \bCREEK ?(TP|TURN(PK)?|TPKE|EX|HI)    # Creek Turnpike
+    - \bTISDALE                             # L L Tisdale Parkway
+    - \bBROKEN ?ARROW                       # Broken Arrow Expressway (U.S. Highway 64)
+  bad_beats:
+    - B3  # Downtown
+san_antonio:
+  state: TX
+  county: ["029"]
+  geoid_prefix: SAN
+  min_year: 2013
+  max_year: 2017
+  speeding:
+    - SPEED
+  highways:
+    - (\b|\d)(IH|HIGHWAY|HWY) ?10|10(E|W)                         # Interstate Highways 10 E & 10 W
+    - (\b|\d)(IH|HIGHWAY|HWY) ?35|35(N|S)                         # Interstate Highways 35 N & 35 S
+    - (\b|\d)(IH|HIGHWAY|HWY) ?37                                 # Interstate Highway 37
+    - (\b|\d)(US|HIGHWAY|HWY) ?90                                 # US Highway 90
+    - (\b|\d)(ST|STATE|HIGHWAY|HWY) ?151                          # State Highway 151
+    - (\b|\d)(ST|STATE|SPUR|HIGHWAY|HWY) ?151                     # State Highway 151
+    - (\b|\d)(US|HIGHWAY|HWY) ?281                                # US Highway 281
+    - (\b|\d)(IH|LOOP|HIGHWAY|HWY) ?410                           # Interstate Highway 410
+    - (\b|\d)((N(ORTH)?|S(OUTH)?)(E(AST)?|W(EST)?))? ?LOOP? ?410  # Interstate Highway 410 (loop)
+    - (\b|\d)(ST|STATE|LOOP|HIGHWAY|HWY) ?1604                    # State Loop 1604
+    - (\b|\d)WURZBACH                                             # Wurzbach Parkway
+    - (\b|\d)KELLY ?(PARKWAY|PKWY)                                # Kelly Parkway
+  bad_beats:
+    - 3350N # San Antonio International Airport
+    - 6310S # Kelly Field (airport)
+    - 6320S # Union-Pacific Sosan Yard (rail yard)
+    - 2120C # Downtown San Antonio
+    - 5160W # Southwest Research Institute
+houston:
+  state: TX
+  county: ["201", "157", "339"]
+  geoid_prefix: HOU
+  min_year: 2014
+  max_year: 2017
+  speeding:
+    - SPEED
+  highways: 
+    - \b(IH?)(-| )*10
+    - \b(IH?)(-| )*45
+    - \b(IH?)(-| )*610   
+    - \b(US)(-| )*59
+    - \b(IH?)(-| )*69
+    - \b(IH?)(-| )*59   
+    - \b(IH?)(-| )*249
+    - \b(US)(-| )*90
+    - \b(US)(-| )*290   
+    - \b(NORTH LOOP)
+    - \b(N LOOP)   
+    - \b(SOUTH LOOP)   
+    - \b(WEST LOOP)      
+    - \b(FREEWAY)
+    - \b(FWY)   
+    - \b(FRWY)      
+    - \b(LA PORTE?)
+    - \b(LAPORTE)
+    - \b(SAM HOUSTON)
+    - \b(EASTEX) FR?Y   
+    - \b(SOUTHWEST) FWT
+    - \b(SH)(-| )249
+    - \b(SH)(-| )288
+    - \b(SH)(-| )99
+    - \b(SH)(-| )146
+    - \b(SH)(-| )225  
+    - \b(FM)(-| )1764
+    - \b(SL)(-| )8
+    - \b(E.? HARDY)
+    - \b(W.? HARDY)   
+    - \b(SPUR 527)
+    - \b(TOMBALL (PKWY|PARKWAY))   
+  bad_beats:
+    - 02A40 # Downtown Houston
+    - 10H30 # Downtown Houston
+    - 01A10 # Downtown Houston
+    - 04F30 # Bear Creek Pioneers Park
+    - 20G80 # George Bush Park
+    - 21I10 # George Bush Intercontinental Airport
+    - 21I20 # George Bush Intercontinental Airport
+    - 21I30 # George Bush Intercontinental Airport
+    - 21I40 # George Bush Intercontinental Airport
+    - 21I50 # George Bush Intercontinental Airport
+    - 21I60 # George Bush Intercontinental Airport
+    - 21I70 # George Bush Intercontinental Airport
+    - 22B10 # Willowbrook Mall (non-reseidential)
+    - 22B40 # George Bush Intercontinental Airport perimeter
+    - 23J40 # Ellington Airport
+    - 23J50 # William P. Hobby Airport
+    - 13D30 # William P. Hobby Airport
+    - 24C20 # Kingwood Golf Course
+    - 24C40 # Lake Houston
+    - 24C50 # Spring Creek Greenway
+mesa:
+  state: AZ
+  county: ["013"]
+  geoid_prefix: MES
+  min_year: 2014
+  max_year: 2016
+  speeding:
+    - SPEED
+  highways:
+    - \b((N|E|S|W)|(US)|(HWY|HIGHWAY)) ?60                  # US Highway 60
+    - \bSUPERSTITION (FR?WY|FREEWAY|HWY)                    # US Highway 60
+    - \b((N|E|S|W)|(US|HWY|SR|STATE ROUTE|LP?|LOOP)) ?202   # AZ State Route 202
+    - \b(SAN ?TAN|RED (MOUNTAIN|MTN)) ?(FR?WY|FREEWAY|HWY)  # AZ State Route 202
+    - \b(N|E|S|W) ?(SAN ?TAN|RED (MOUNTAIN|MTN))            # AZ State Route 202
+    - \bE ?(SR|STATE ROUTE|LOOP)? ?24                       # AZ State Route 24
+    - \bGATEWAY ?(FR?WY|FREEWAY|HWY)                        # AZ State Route 24
+  bad_beats:
+    - "81"  # Phoenix-Mesa Gateway Airport
